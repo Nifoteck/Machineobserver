@@ -130,14 +130,7 @@ machine.notifyallobservers()
 ### Extending with Custom Observers
 
 ```python
-class CustomObserver(Observer):
-    def __init__(self, name):
-        super().__init__(name)
-    
-    def update(self, state, from_):
-        # Custom logic here
-        print(f"Custom update: {from_.name} is now {state}")
-```
+
 
 ## Architecture
 
