@@ -35,27 +35,46 @@ class Machine(Subject):
         super().__init__()
         self.name = name
 
+class Dashboard(Observer):
+    '''
+    Sends machine state updates to a web dashboard via WebSocket.
+    '''
+    def __init__(self, name, websocket_url):
+        super().__init__(name)
+        self.websocket_url = websocket_url
+    
+    def update(self, state, from_):
+        import json
+        import asyncio
+        import websockets
+        
+        message = json.dumps({
+            "machine_name": from_.name,
+            "state": state,
+            "dashboard": self.name
+        })
+        
+        async def send_message():
+            try:
+                async with websockets.connect(self.websocket_url) as websocket:
+                    await websocket.send(message)
+                    print(f"Dashboard '{self.name}': Sent update for {from_.name} - {state}")
+            except Exception as e:
+                print(f"Dashboard '{self.name}': Failed to send update - {e}")
+        
+        asyncio.run(send_message())
 
 if __name__ == "__main__":
-
+   
+    observer = Dashboard("Main Dashboard", "ws://localhost:8765")
     fuji = Machine("Fuji")
     nxt = Machine("NXT")
     juki = Machine("JUKI")
 
-
-    jus = Employee("Justina", "Operator")
-    rob = Employee("Robert", "Supervisor")
-    ben = Employee("Benjamin", "Technician")
-    med = Employee("Medusa", "Technician")
-    mik = Employee("Mike", "Operator")
+    juki.attach(observer)
+    fuji.attach(observer)
+    nxt.attach(observer)
     
-    fuji.attach(jus)
-    fuji.attach(rob)
-    nxt.attach(rob)
-    juki.attach(mik)
-    nxt.attach(ben)
-    juki.attach(rob)
-
     juki.setState("idle")
     juki.notifyallobservers()
 
@@ -67,3 +86,6 @@ if __name__ == "__main__":
 
     juki.setState("operational")
     juki.notifyallobservers()
+
+    fuji.setState("idle")
+    fuji.notifyallobservers()
