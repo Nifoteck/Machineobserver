@@ -102,7 +102,7 @@ This creates machines, attaches observers, and sends state updates. You'll see:
 machine = Machine("CNC Machine")
 
 # Create an employee observer
-employee = Employee("Alice", "Operator")
+employee = Employee("Justina", "Operator")
 
 # Attach the observer to the machine
 machine.attach(employee)
@@ -119,7 +119,7 @@ machine.notifyallobservers()
 dashboard = Dashboard("Main Dashboard", "ws://localhost:8765")
 
 # Attach to a machine
-machine = Machine("3D Printer")
+machine = Machine("NXT")
 machine.attach(dashboard)
 
 # State changes will be sent to the web dashboard
@@ -137,12 +137,6 @@ machine.notifyallobservers()
 ### Observer Pattern
 
 The project implements the classic Observer pattern:
-
-- **Subject (Machine)**: Maintains a list of observers and notifies them of state changes
-- **Observer**: Abstract interface for all observers with an `update()` method
-- **Concrete Observers**:
-  - `Employee`: Logs state changes to console
-  - `Dashboard`: Sends state changes to WebSocket server
 
 ### Component Communication
 
