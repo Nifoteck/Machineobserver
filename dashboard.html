@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.running {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .status.stopped {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .status.idle {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .status.default {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .connection-status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .last-update {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Machine Dashboard</h1>
+        <div id="connectionStatus" class="connection-status disconnected">
+            Disconnected
+        </div>
+        
+        <table id="machineTable">
+            <thead>
+                <tr>
+                    <th>Machine Name</th>
+                    <th>State</th>
+                    <th>Last Update</th>
+                </tr>
+            </thead>
+            <tbody id="machineTableBody">
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #999;">
+                        No machines connected yet...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const machines = new Map();
+        let ws = null;
+        const wsUrl = 'ws://localhost:8765';
+        
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (connected) {
+                statusDiv.textContent = 'Connected to WebSocket Server';
+                statusDiv.className = 'connection-status connected';
+            } else {
+                statusDiv.textContent = 'Disconnected - Attempting to reconnect...';
+                statusDiv.className = 'connection-status disconnected';
+            }
+        }
+        
+        function getStatusClass(state) {
+            const stateLower = state.toLowerCase();
+            if (stateLower === 'running') return 'running';
+            if (stateLower === 'stopped') return 'stopped';
+            if (stateLower === 'idle') return 'idle';
+            return 'default';
+        }
+        
+        function updateTable() {
+            const tbody = document.getElementById('machineTableBody');
+            
+            if (machines.size === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #999;">
+                            No machines connected yet...
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            machines.forEach((data, machineName) => {
+                const row = tbody.insertRow();
+                
+                const nameCell = row.insertCell(0);
+                nameCell.textContent = machineName;
+                
+                const stateCell = row.insertCell(1);
+                const statusClass = getStatusClass(data.state);
+                stateCell.innerHTML = `<span class="status ${statusClass}">${data.state}</span>`;
+                
+                const updateCell = row.insertCell(2);
+                updateCell.innerHTML = `<span class="last-update">${data.lastUpdate}</span>`;
+            });
+        }
+        
+        function connectWebSocket() {
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                console.log('Connected to WebSocket server');
+                updateConnectionStatus(true);
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    const machineName = data.machine_name;
+                    const state = data.state;
+                    const now = new Date().toLocaleTimeString();
+                    
+                    machines.set(machineName, {
+                        state: state,
+                        lastUpdate: now
+                    });
+                    
+                    updateTable();
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = function(event) {
+                console.log('Disconnected from WebSocket server');
+                updateConnectionStatus(false);
+                
+                // Attempt to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+        
+        // Connect on page load
+        connectWebSocket();
+    </script>
+</body>
+</html>
