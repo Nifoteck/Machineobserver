@@ -137,6 +137,7 @@ machine.notifyallobservers()
 ### Observer Pattern
 
 The project implements the classic Observer pattern:
+git status
 
 ### Component Communication
 

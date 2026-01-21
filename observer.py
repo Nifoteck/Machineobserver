@@ -81,10 +81,10 @@ if __name__ == "__main__":
     nxt.setState("running")
     nxt.notifyallobservers()
 
-    fuji.setState("operational")
+    fuji.setState("starved")
     fuji.notifyallobservers()
 
-    juki.setState("operational")
+    juki.setState("Starved")
     juki.notifyallobservers()
 
     fuji.setState("idle")
